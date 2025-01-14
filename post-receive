@@ -1,1 +1,30 @@
- 
+#!/bin/bash
+TARGET="/home/u123456789/domains/yourdomain.com/public_html"
+GIT_DIR="/home/u123456789/domains/yourdomain.com/repo.git"
+BRANCH="main"
+
+while read oldrev newrev ref
+do
+    # only checking out the main (or master) branch
+    if [ "$ref" = "refs/heads/$BRANCH" ];
+    then
+        echo "Deploying $BRANCH branch..."
+        git --work-tree=$TARGET --git-dir=$GIT_DIR checkout -f $BRANCH
+        
+        # Navigate to the project directory
+        cd $TARGET
+        
+        # Install Composer dependencies
+        composer install --optimize-autoloader --no-dev
+        
+        # Clear and cache routes and config
+        php artisan config:cache
+        php artisan route:cache
+        php artisan view:cache
+        
+        # Set proper permissions
+        chmod -R 755 storage bootstrap/cache
+        
+        echo "Deployment complete."
+    fi
+done 
