@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
@@ -105,38 +106,52 @@ class ProfileController extends Controller
 
     public function updateImage(Request $request)
     {
+        // Add authorization check
+        if ($request->user()->id !== (int)$request->get('user_id')) {
+            return response()->json([
+                'message' => 'Unauthorized action.'
+            ], 403);
+        }
+
         $data = $request->validate([
-            'cover' => ['nullable', 'image'],
-            'avatar' => ['nullable', 'image']
+            'user_id' => ['required', 'exists:users,id'],
+            'cover' => ['nullable', 'image', 'max:2048'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
         ]);
 
-        $user = $request->user();
+        DB::beginTransaction();
+        $allFilePaths = [];
+        try {
+            $user = User::find($data['user_id']);
 
-        $avatar = $data['avatar'] ?? null;
-        /** @var \Illuminate\Http\UploadedFile $cover */
-        $cover = $data['cover'] ?? null;
-
-        $success = '';
-        if ($cover) {
-            if ($user->cover_path) {
-                Storage::disk('public')->delete($user->cover_path);
+            if ($request->hasFile('cover')) {
+                $path = $request->file('cover')->store('covers', 'public');
+                $allFilePaths[] = $path;
+                if ($user->cover_path) {
+                    Storage::disk('public')->delete($user->cover_path);
+                }
+                $user->cover_path = $path;
             }
-            $path = $cover->store('user-' . $user->id, 'public');
-            $user->update(['cover_path' => $path]);
-            $success = 'Your cover image was updated';
+
+            if ($request->hasFile('avatar')) {
+                $path = $request->file('avatar')->store('avatars', 'public');
+                $allFilePaths[] = $path;
+                if ($user->avatar_path) {
+                    Storage::disk('public')->delete($user->avatar_path);
+                }
+                $user->avatar_path = $path;
+            }
+
+            $user->save();
+            DB::commit();
+        } catch (\Exception $e) {
+            foreach ($allFilePaths as $path) {
+                Storage::disk('public')->delete($path);
+            }
+            DB::rollBack();
+            throw $e;
         }
 
-        if ($avatar) {
-            if ($user->avatar_path) {
-                Storage::disk('public')->delete($user->avatar_path);
-            }
-            $path = $avatar->store('user-' . $user->id, 'public');
-            $user->update(['avatar_path' => $path]);
-            $success = 'Your avatar image was updated';
-        }
-
-//        session('success', 'Cover image has been updated');
-
-        return back()->with('success', $success);
+        return back();
     }
 }

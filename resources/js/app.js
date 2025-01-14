@@ -17,8 +17,8 @@ createInertiaApp({
         const app = createApp({ render: () => h(App, props) });
         
         app.use(plugin)
-           .use(CKEditor)
            .use(ZiggyVue)
+           .use(CKEditor)
            .directive('click-outside', clickOutside);
         
         return app.mount(el);
