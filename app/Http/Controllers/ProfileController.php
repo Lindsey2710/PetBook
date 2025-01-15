@@ -131,6 +131,12 @@ class ProfileController extends Controller
                     Storage::disk('public')->delete($user->cover_path);
                 }
                 $user->cover_path = $path;
+
+                // Add this after cover upload
+                copy(
+                    storage_path('app/public/' . $path),
+                    public_path('storage/' . $path)
+                );
             }
 
             if ($request->hasFile('avatar')) {
@@ -140,6 +146,12 @@ class ProfileController extends Controller
                     Storage::disk('public')->delete($user->avatar_path);
                 }
                 $user->avatar_path = $path;
+
+                // Add this after avatar upload
+                copy(
+                    storage_path('app/public/' . $path),
+                    public_path('storage/' . $path)
+                );
             }
 
             $user->save();

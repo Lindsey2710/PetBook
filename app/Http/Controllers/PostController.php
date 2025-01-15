@@ -75,6 +75,18 @@ class PostController extends Controller
                     'size' => $file->getSize(),
                     'created_by' => $user->id
                 ]);
+
+                $sourcePath = storage_path('app/public/' . dirname($path));
+                $targetPath = public_path('storage/' . dirname($path));
+                
+                if (!is_dir($targetPath)) {
+                    mkdir($targetPath, 0775, true);
+                }
+                
+                copy(
+                    storage_path('app/public/' . $path),
+                    public_path('storage/' . $path)
+                );
             }
 
             DB::commit();
@@ -137,6 +149,18 @@ class PostController extends Controller
                     'size' => $file->getSize(),
                     'created_by' => $user->id
                 ]);
+
+                $sourcePath = storage_path('app/public/' . dirname($path));
+                $targetPath = public_path('storage/' . dirname($path));
+                
+                if (!is_dir($targetPath)) {
+                    mkdir($targetPath, 0775, true);
+                }
+                
+                copy(
+                    storage_path('app/public/' . $path),
+                    public_path('storage/' . $path)
+                );
             }
 
             DB::commit();
